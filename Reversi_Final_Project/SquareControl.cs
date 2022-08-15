@@ -25,7 +25,7 @@ namespace Reversi_Final_Project
         private static readonly Color NormalBackColorDefault = Color.Green;
         private static readonly Color NormalBackColor = NormalBackColorDefault;
         private static readonly Color ActiveSquareBackColor = Color.FromArgb(0, 224, 0);
-        private static Color ValidMoveBackColor = Color.FromArgb(0, 176, 0);
+        private static readonly Color ValidMoveBackColor = Color.FromArgb(0, 176, 0);
 
 
         private static readonly Pen pen = new Pen(Color.Black);
@@ -36,8 +36,8 @@ namespace Reversi_Final_Project
             InitializeComponent();
 
             Contents = (int) Coin.Empty;
-            this.Row = row;
-            this.Col = col;
+            Row = row;
+            Col = col;
 
             // Prevent the control from receiving focus via the TAB key.
             TabStop = false;
