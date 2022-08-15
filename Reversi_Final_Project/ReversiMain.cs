@@ -12,6 +12,7 @@ namespace Reversi_Final_Project
     {
         #region Network
 
+        private ClientTcpController client;
         private ServerTcpController serverTcp;
 
         #endregion
@@ -27,6 +28,8 @@ namespace Reversi_Final_Project
         // Game parameters.
         private int currentColor;
         private string Color ="";
+
+        private bool IsPlayerTurn;
 
         private int OnlineFlag = 0; // 0 if Offline, 1 if Online
 
@@ -75,13 +78,33 @@ namespace Reversi_Final_Project
             UpdateBoardDisplay();
 
             // Set the first player.
-            currentColor = -1;
-
+            currentColor = 1;
+            if(serverTcp != null)
+                await InitializeClientAsync();
             // Start the first turn.
             StartTurn();
 
-            if(serverTcp != null)
-                await InitializeClientAsync();
+            
+        }
+        private async Task EnAttenteDeDonneesAsync()
+        {
+            DataToExchange dataToExchange;
+            if (client != null)
+            {
+                dataToExchange = await client.ReceiveAsync<DataToExchange>();
+            }
+            else
+            {
+                dataToExchange = await serverTcp.ReceiveAsync<DataToExchange>();
+            }
+            
+            lbEchanges.Items.Insert(0, "Données recues");
+            IsPlayerTurn = true;
+            board = dataToExchange.Board;
+            
+            UpdateBoardDisplay();
+            Focus();
+            StartTurn();
         }
 
         private async Task InitializeClientAsync()
@@ -97,10 +120,18 @@ namespace Reversi_Final_Project
 
         private void StartTurn()
         {
+            if (client != null)
+            {
+                currentColor = 1;
+            }
+            else
+            {
+                currentColor = -1;
+            }
             if (!board.HasAnyValidMove(currentColor))
             {
                 MessageBox.Show("No Valid move");
-                currentColor *= -1;
+                //currentColor *= -1;
                 if (!board.HasAnyValidMove(currentColor))
                 {
 
@@ -111,7 +142,7 @@ namespace Reversi_Final_Project
 
             Focus();
             HighlightValidMoves(currentColor);
-
+            Board1.Enabled = true;
             Board1.Refresh();
         }
 
@@ -127,7 +158,7 @@ namespace Reversi_Final_Project
 
         }
 
-        private void MakeMove(int row, int col)
+        private async Task MakeMove(int row, int col)
         {
             // Make the move on the board.
             board.MakeMove(currentColor, row, col);
@@ -138,27 +169,56 @@ namespace Reversi_Final_Project
             // Update the display to reflect the board changes.
             UpdateBoardDisplay();
 
-            EndMove();
+            await EndMoveAsync();
         }
 
 
-        private void EndMove()
+        private async Task EndMoveAsync()
         {
             // Switch players and start the next turn.
 
+            SetColor();
+            DataToExchange dataToExchange = new DataToExchange
+            {
+                Board = board
+            };
+            if (client != null)
+            {
+                await client.SendAsync(dataToExchange);
+
+            }
+            else
+            {
+                await serverTcp.SendAsync(dataToExchange);
+
+            }
+
+            StopTurn();
+            
+            UpdateBoardDisplay();
+            
+            await EnAttenteDeDonneesAsync();
+
+        }
+
+        private void StopTurn()
+        {
+            Board1.Enabled = false;
+        }
+
+        public void SetColor()
+        {
             if (currentColor == -1)
                 Color = "Black";
             else
                 Color = "White";
             lbEchanges.Items.Insert(0, Color.ToString() + " has played.");
-            currentColor *= -1;
+            //currentColor *= -1;
             if (currentColor == -1)
                 Color = "Black";
             else
                 Color = "White";
             lbEchanges.Items.Insert(0,"It's " + Color.ToString() + "'s turn.");
-            StartTurn();
-
         }
         //
         // Updates the display to reflect the current game board.
@@ -182,7 +242,7 @@ namespace Reversi_Final_Project
            Board1.Refresh();
             
         }
-        private void SquareControl_Click(object sender, EventArgs e)
+        private async void SquareControl_Click(object sender, EventArgs e)
         {
             SquareControl squareControl = (SquareControl)sender;
 
@@ -193,7 +253,7 @@ namespace Reversi_Final_Project
                 squareControl.Cursor = Cursors.Default;
 
                 // Make the move.
-                MakeMove(squareControl.Row, squareControl.Col);
+                await MakeMove(squareControl.Row, squareControl.Col);
             }
         }
         private void SquareControl_MouseMove(object sender, MouseEventArgs e)
@@ -274,6 +334,7 @@ namespace Reversi_Final_Project
         
         private async void mcSocket_Ecouter_Click(object sender, EventArgs e)
         {
+            IsPlayerTurn = true;
             mcSocket_Ecouter.Enabled = mcSocket_Connecter.Enabled = false;
             mcSocket_deconnecter.Enabled = true;
 
@@ -285,16 +346,21 @@ namespace Reversi_Final_Project
         
         private async void mcSocket_Connecter_Click(object sender, EventArgs e)
         {
+            
             mcSocket_Ecouter.Enabled = mcSocket_Connecter.Enabled = false;
             mcSocket_deconnecter.Enabled = true;
             
             // démarre le client tcp
-            ClientTcpController client = new ClientTcpController();
+            client = new ClientTcpController();
             await client.ConnectAsync(new IPEndPoint(GetLocalIpAddress(), 1010));
             DataToExchange dataToExchange = await client.ReceiveAsync<DataToExchange>();
 
+            IsPlayerTurn = false;
             board = dataToExchange.Board;
+            
             UpdateBoardDisplay();
+            Focus();
+            await EnAttenteDeDonneesAsync();
         }
     }
 }
