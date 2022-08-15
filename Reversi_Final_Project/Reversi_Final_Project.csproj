@@ -55,11 +55,14 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Réseau\Clients.cs" />
-    <Compile Include="Réseau\ClientsController.cs" />
-    <Compile Include="Réseau\Réseau.cs" />
+    <Compile Include="Réseau\Client.cs" />
+    <Compile Include="Réseau\ClientTcpController.cs" />
+    <Compile Include="Réseau\Command.cs" />
+    <Compile Include="Réseau\DataToExchange.cs" />
+    <Compile Include="Réseau\Serialise.cs" />
+    <Compile Include="Réseau\ServerTcpController.cs" />
     <Compile Include="Réseau\Serveur.cs" />
-    <Compile Include="Réseau\ServeurController.cs" />
+    <Compile Include="Réseau\Tcp.cs" />
     <Compile Include="Serialise.cs" />
     <Compile Include="SquareControl.cs">
       <SubType>UserControl</SubType>

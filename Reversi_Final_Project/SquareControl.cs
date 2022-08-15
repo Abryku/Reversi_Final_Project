@@ -14,14 +14,9 @@ namespace Reversi_Final_Project
     {
 
         // These reflect the position of the square on the board.
-        public int Row
-        {
-            get { return this.row; }
-        }
-        public int Col
-        {
-            get { return this.col; }
-        }
+        public int Row => this.row;
+
+        public int Col => this.col;
 
         // These reflect the public row and column properties.
         private int row;

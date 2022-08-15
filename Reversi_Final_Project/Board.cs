@@ -1,72 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.Serialization;
 
 namespace Reversi_Final_Project
 {
-    [Serializable()]
-    class Board 
+    [Serializable]
+    public class Board 
     {
         // These constants represent the contents of a board square.
         public static readonly int Black = -1;
         public static readonly int White = 1;
         public static readonly int Empty = 0;
 
-        // This two-dimensional array represents the squares on the board.
-        private int[,] squares;
+        // This two-dimensional array represents the Squares on the board.
+        public int[,] Squares { get; set; }
 
         // This two-dimensional array tracks which discs are safe (i.e.,
         // discs that cannot be outflanked in any direction).
         private bool[,] safeDiscs;
 
         // These counts reflect the current board situation.
-        public int BlackCount
-        {
-            get { return this.blackCount; }
-        }
-        public int WhiteCount
-        {
-            get { return this.whiteCount; }
-        }
-        public int EmptyCount
-        {
-            get { return this.emptyCount; }
-        }
-        public int BlackFrontierCount
-        {
-            get { return this.blackFrontierCount; }
-        }
-        public int WhiteFrontierCount
-        {
-            get { return this.whiteFrontierCount; }
-        }
-        public int BlackSafeCount
-        {
-            get { return this.blackSafeCount; }
-        }
-        public int WhiteSafeCount
-        {
-            get { return this.whiteSafeCount; }
-        }
+        public int BlackCount => blackCount;
 
+        public int WhiteCount => whiteCount;
+        
         //Counts
         private int blackCount;
         private int whiteCount;
-        private int emptyCount;
-        private int blackFrontierCount;
-        private int whiteFrontierCount;
-        private int blackSafeCount;
-        private int whiteSafeCount;
 
         public Board()
         {
-            // Create the squares and safe disc map.
-            this.squares = new int[8, 8];
-            this.safeDiscs = new bool[8, 8];
+            // Create the Squares and safe disc map.
+            Squares = new int[8, 8];
+            safeDiscs = new bool[8, 8];
 
             int i, j;
 
@@ -74,13 +38,13 @@ namespace Reversi_Final_Project
             {
                 for (j = 0; j < 8; j++)
                 {
-                    this.squares[i, j] = Board.Empty;
-                    this.safeDiscs[i, j] = false;
+                    Squares[i, j] = Empty;
+                    safeDiscs[i, j] = false;
                 }
             }
 
             // Update the counts.
-            this.UpdateCounts();
+            UpdateCounts();
         }
 
         public void SetForNewGame()
@@ -88,33 +52,35 @@ namespace Reversi_Final_Project
             // Clear the board.
             int i, j;
             for (i = 0; i < 8; i++)
-            for (j = 0; j < 8; j++)
             {
-                this.squares[i, j] = Board.Empty;
-                this.safeDiscs[i, j] = false;
+                for (j = 0; j < 8; j++)
+                {
+                    Squares[i, j] = Empty;
+                    safeDiscs[i, j] = false;
+                }
             }
-
+            
             // Set two black and two white discs in the center.
-            this.squares[3, 3] = White;
-            this.squares[3, 4] = Black;
-            this.squares[4, 3] = Black;
-            this.squares[4, 4] = White;
+            Squares[3, 3] = White;
+            Squares[3, 4] = Black;
+            Squares[4, 3] = Black;
+            Squares[4, 4] = White;
 
             // Update the counts.
-            this.UpdateCounts();
+            UpdateCounts();
         }
         public int GetSquareContents(int row, int col)
         {
-            return this.squares[row, col];
+            return Squares[row, col];
         }
 
         public void MakeMove(int color, int row, int col)
 		{
 			// Set the disc on the square.
-			this.squares[row, col] = color;
+			Squares[row, col] = color;
 
 			// Update the counts.
-			this.UpdateCounts();
+			UpdateCounts();
 		}
 
         public void IsGoingToBeFlipped(int row, int col)
@@ -132,14 +98,14 @@ namespace Reversi_Final_Project
 
                     if ((row + dr) >= 0 && (row + dr) <= 7 && (col + dc) >= 0 && (col + dc) <= 7)
                     {
-                        if (this.squares[row, col] == White)
+                        if (Squares[row, col] == White)
                         {
-                            if (this.squares[row + dr, col + dc] == Black)
+                            if (Squares[row + dr, col + dc] == Black)
                             {
                                 
                                 while (((row + r) >= 0) && ((row + r) <= 7) && ((col + c) <= 7) && ((col + c) >= 0) && (i==0))
                                 {
-                                    if(this.squares[row + r, col + c] == Black)
+                                    if(Squares[row + r, col + c] == Black)
                                     {
                                         r = r + dr;
                                         c = c + dc;
@@ -151,13 +117,13 @@ namespace Reversi_Final_Project
                                 }
                                 if(((row + r) >= 0) && ((row + r) <= 7) && ((col + c) <= 7) && ((col + c) >= 0))
                                 {
-                                    if (this.squares[row + r, col + c] == White)
+                                    if (Squares[row + r, col + c] == White)
                                     {
                                         int rbis = dr;
                                         int cbis = dc;
-                                        while (this.squares[row + rbis, col + cbis] == Black)
+                                        while (Squares[row + rbis, col + cbis] == Black)
                                         {
-                                            this.squares[row + rbis, col + cbis] = White;
+                                            Squares[row + rbis, col + cbis] = White;
                                             rbis = rbis + dr;
                                             cbis = cbis + dc;
                                         }
@@ -169,12 +135,12 @@ namespace Reversi_Final_Project
                         }
                         else
                         {
-                            if (this.squares[row + dr, col + dc] == White)
+                            if (Squares[row + dr, col + dc] == White)
                             {
 
                                 while (((row + r) >= 0) && ((row + r) <= 7) && ((col + c) <= 7) && ((col + c) >= 0) && (i == 0))
                                 {
-                                    if (this.squares[row + r, col + c] == White)
+                                    if (Squares[row + r, col + c] == White)
                                     {
                                         r = r + dr;
                                         c = c + dc;
@@ -186,26 +152,21 @@ namespace Reversi_Final_Project
                                 }
                                 if (((row + r) >= 0) && ((row + r) <= 7) && ((col + c) <= 7) && ((col + c) >= 0))
                                 {
-                                    if (this.squares[row + r, col + c] == Black)
+                                    if (Squares[row + r, col + c] == Black)
                                     {
                                         int rbis = dr;
                                         int cbis = dc;
-                                        while (this.squares[row + rbis, col + cbis] == White)
+                                        while (Squares[row + rbis, col + cbis] == White)
                                         {
-                                            this.squares[row + rbis, col + cbis] = Black;
+                                            Squares[row + rbis, col + cbis] = Black;
                                             rbis = rbis + dr;
                                             cbis = cbis + dc;
                                         }
                                     }
-
                                 }
-
                             }
                         }
-
                     }
-                    
-                    
                 }
             }
         }
@@ -217,9 +178,13 @@ namespace Reversi_Final_Project
             // Check all board positions for a valid move.
             int r, c;
             for (r = 0; r < 8; r++)
-            for (c = 0; c < 8; c++)
-                if (this.IsValidMove(r, c, color))
-                    return true;
+            {
+                for (c = 0; c < 8; c++)
+                {
+                    if (IsValidMove(r, c, color))
+                        return true; 
+                }
+            }
 
             // None found.
             return false;
@@ -227,7 +192,7 @@ namespace Reversi_Final_Project
         public bool IsValidMove(int row, int col, int color)
         {
             // The square must be empty.
-            if (this.squares[row, col] != Board.Empty)
+            if (Squares[row, col] != Empty)
                 return false;
 
             int direction_Row, direction_Col;
@@ -235,7 +200,7 @@ namespace Reversi_Final_Project
             {
                 for (direction_Col = -1; direction_Col <= 1; direction_Col++)
                 {
-                    if (!(direction_Row == 0 && direction_Col == 0) && this.IsOutFlanking(row, col, direction_Row, direction_Col, color))
+                    if (!(direction_Row == 0 && direction_Col == 0) && IsOutFlanking(row, col, direction_Row, direction_Col, color))
                         return true;
                 }
             }
@@ -251,7 +216,7 @@ namespace Reversi_Final_Project
             for (i = 0; i < 8; i++)
                 for (j = 0; j < 8; j++)
                     // If the move is valid for the color, bump the count.
-                    if (this.IsValidMove(i, j, color))
+                    if (IsValidMove(i, j, color))
                         n++;
             return n;
         }
@@ -262,7 +227,7 @@ namespace Reversi_Final_Project
             // land on a disc of the opposite color.
             int r = row + direction_Row;
             int c = col + direction_Col;
-            while (r >= 0 && r < 8 && c >= 0 && c < 8 && this.squares[r, c] == -color)
+            while (r >= 0 && r < 8 && c >= 0 && c < 8 && Squares[r, c] == -color)
             {
                 r += direction_Row;
                 c += direction_Col;
@@ -270,16 +235,15 @@ namespace Reversi_Final_Project
 
             // If we ran off the board, only moved one space or didn't land on
             // a disc of the same color, return false.
-            if (r < 0 || r > 7 || c < 0 || c > 7 || (r - direction_Row == row && c - direction_Col == col) || this.squares[r, c] != color)
+            if (r < 0 || r > 7 || c < 0 || c > 7 || (r - direction_Row == row && c - direction_Col == col) || Squares[r, c] != color)
                 return false;
 
-            // Otherwise, return true;
             return true;
         }
 
         private bool IsOutFlankable(int row, int col)
         {
-            int color = this.squares[row, col]; //Get the color of the disc
+            int color = Squares[row, col]; //Get the color of the disc
 
             //Condition to be outflankable
             int i, j;
@@ -292,18 +256,18 @@ namespace Reversi_Final_Project
             //Lets check the left side
             for (j = 0; j < col && !LeftIsEmpty; j++)
             {
-                if (this.squares[row, j] == Board.Empty)
+                if (Squares[row, j] == Empty)
                     LeftIsEmpty = true;
-                if (this.squares[row, j] != color || !this.safeDiscs[row, j])
+                if (Squares[row, j] != color || !safeDiscs[row, j])
                     LeftIsUnsafe = true;
             }
 
             //Lets check the right side
             for (j = col + 1; j < 8 && !RightIsEmpty; j++)
             {
-                if (this.squares[row, j] == Board.Empty)
+                if (Squares[row, j] == Empty)
                     RightIsEmpty = true;
-                if (this.squares[row, j] != color || !this.safeDiscs[row, j])
+                if (Squares[row, j] != color || !safeDiscs[row, j])
                     RightIsUnsafe = true;
             }
 
@@ -320,18 +284,18 @@ namespace Reversi_Final_Project
             //Lets check top side
             for (i = 0; i < row && !LeftIsEmpty; i++)
             {
-                if (this.squares[i, col] == Board.Empty)
+                if (Squares[i, col] == Empty)
                     LeftIsEmpty = true;
-                if (this.squares[i, col] != color || !this.safeDiscs[i, col])
+                if (Squares[i, col] != color || !safeDiscs[i, col])
                     LeftIsUnsafe = true;
             }
 
             //Lets check bot side
-            for (i = row + 1; i < 8 && !this.safeDiscs[i, col]; i++)
+            for (i = row + 1; i < 8 && !safeDiscs[i, col]; i++)
             {
-                if (this.squares[i, col] == Board.Empty)
+                if (Squares[i, col] == Empty)
                     RightIsEmpty = true;
-                if (this.squares[i, col] != color || !this.safeDiscs[i, col])
+                if (Squares[i, col] != color || !safeDiscs[i, col])
                     RightIsUnsafe = true;
             }
 
@@ -350,9 +314,9 @@ namespace Reversi_Final_Project
             j = col - 1;
             while (i >= 0 && j >= 0 && !LeftIsEmpty)
             {
-                if (this.squares[i, j] == Board.Empty)
+                if (Squares[i, j] == Empty)
                     LeftIsEmpty = true;
-                else if (this.squares[i, j] != color || !this.safeDiscs[i, j])
+                else if (Squares[i, j] != color || !safeDiscs[i, j])
                     LeftIsUnsafe = true;
                 i--;
                 j--;
@@ -362,9 +326,9 @@ namespace Reversi_Final_Project
             j = col + 1;
             while (i < 8 && j < 8 && !RightIsEmpty)
             {
-                if (this.squares[i, j] == Board.Empty)
+                if (Squares[i, j] == Empty)
                     RightIsEmpty = true;
-                else if (this.squares[i, j] != color || !this.safeDiscs[i, j])
+                else if (Squares[i, j] != color || !safeDiscs[i, j])
                     RightIsUnsafe = true;
                 i++;
                 j++;
@@ -384,9 +348,9 @@ namespace Reversi_Final_Project
             j = col + 1;
             while (i >= 0 && j < 8 && !LeftIsEmpty)
             {
-                if (this.squares[i, j] == Board.Empty)
+                if (Squares[i, j] == Empty)
                     LeftIsEmpty = true;
-                if (this.squares[i, j] != color || !this.safeDiscs[i, j])
+                if (Squares[i, j] != color || !safeDiscs[i, j])
                     LeftIsUnsafe = true;
                 i--;
                 j++;
@@ -396,9 +360,9 @@ namespace Reversi_Final_Project
             j = col - 1;
             while (i < 8 && j >= 0 && !RightIsEmpty)
             {
-                if (this.squares[i, j] == Board.Empty)
+                if (Squares[i, j] == Empty)
                     RightIsEmpty = true;
-                if (this.squares[i, j] != color || !this.safeDiscs[i, j])
+                if (Squares[i, j] != color || !safeDiscs[i, j])
                     RightIsUnsafe = true;
                 i++;
                 j--;
@@ -411,16 +375,12 @@ namespace Reversi_Final_Project
             //Every lines are safe
             return false;
         }
+        
         private void UpdateCounts()
         {
             // Reset all counts.
-            this.blackCount = 0;
-            this.whiteCount = 0;
-            this.emptyCount = 0;
-            this.blackFrontierCount = 0;
-            this.whiteFrontierCount = 0;
-            this.whiteSafeCount = 0;
-            this.blackSafeCount = 0;
+            blackCount = 0;
+            whiteCount = 0;
 
             int i, j;
 
@@ -437,48 +397,26 @@ namespace Reversi_Final_Project
                 statusChanged = false;
                 for (i = 0; i < 8; i++)
                     for (j = 0; j < 8; j++)
-                        if (this.squares[i, j] != Board.Empty && !this.safeDiscs[i, j] && !this.IsOutFlankable(i, j))
+                        if (Squares[i, j] != Empty && !safeDiscs[i, j] && !IsOutFlankable(i, j))
                         {
-                            this.safeDiscs[i, j] = true;
+                            safeDiscs[i, j] = true;
                             statusChanged = true;
                         }
             }
 
             // Tally the counts.
-            int dr, dc;
             for (i = 0; i < 8; i++)
                 for (j = 0; j < 8; j++)
                 {
-                    // If there is a disc at this position, determine if it is
-                    // on the frontier (i.e., adjacent to an empty square).
-                    bool isFrontier = false;
-                    if (this.squares[i, j] != Board.Empty)
-                    {
-                        for (dr = -1; dr <= 1; dr++)
-                            for (dc = -1; dc <= 1; dc++)
-                                if (!(dr == 0 && dc == 0) && i + dr >= 0 && i + dr < 8 && j + dc >= 0 && j + dc < 8 && this.squares[i + dr, j + dc] == Board.Empty)
-                                    isFrontier = true;
-                    }
-
                     // Update the counts.
-                    if (this.squares[i, j] == Board.Black)
+                    if (Squares[i, j] == Black)
                     {
-                        this.blackCount++;
-                        if (isFrontier)
-                            this.blackFrontierCount++;
-                        if (this.safeDiscs[i, j])
-                            this.blackSafeCount++;
+                        blackCount++;
                     }
-                    else if (this.squares[i, j] == Board.White)
+                    else if (Squares[i, j] == White)
                     {
-                        this.whiteCount++;
-                        if (isFrontier)
-                            this.whiteFrontierCount++;
-                        if (this.safeDiscs[i, j])
-                            this.whiteSafeCount++;
+                        whiteCount++;
                     }
-                    else
-                        this.emptyCount++;
                 }
         }
 

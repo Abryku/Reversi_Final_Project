@@ -135,7 +135,7 @@
             this.mcSocket_deconnecter.Name = "mcSocket_deconnecter";
             this.mcSocket_deconnecter.Size = new System.Drawing.Size(141, 22);
             this.mcSocket_deconnecter.Text = "Déconnecter";
-            this.mcSocket_deconnecter.Click += new System.EventHandler(this.mcSocket_deconnecter_Click);
+            // this.mcSocket_deconnecter.Click += new System.EventHandler(this.mcSocket_deconnecter_Click);
             // 
             // lbEchanges
             // 
@@ -186,7 +186,7 @@
             this.bEnvoyer.TabIndex = 7;
             this.bEnvoyer.Text = "Send";
             this.bEnvoyer.UseVisualStyleBackColor = true;
-            this.bEnvoyer.Click += new System.EventHandler(this.bEnvoyer_Click);
+            // this.bEnvoyer.Click += new System.EventHandler(this.bEnvoyer_Click);
             // 
             // ReversiMain
             // 
