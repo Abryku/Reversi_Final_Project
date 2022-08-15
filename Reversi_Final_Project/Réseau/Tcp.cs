@@ -7,78 +7,73 @@ namespace Reversi_Final_Project.Réseau
 {
 	public class Tcp
 	{
+		protected NetworkStream _flux;
+		
 		/**
 		 * <summary>Lance l'écoute sur le serveur</summary>
 		 * <returns>Les données wrappées dans le model T demandé, null si une erreur</returns>
 		 */
-		protected async Task<T> ReceiveAsync<T>(NetworkStream flux) where T : class
+		public async Task<Board> ReceiveAsync()
 		{
-			T data = null;
-
-			try
+			return await ReceiveAsync(_flux);
+		}
+		
+		/**
+		 * <summary>Lance l'écoute sur le serveur</summary>
+		 * <returns>Les données wrappées dans le model T demandé, null si une erreur</returns>
+		 */
+		private async Task<Board> ReceiveAsync(NetworkStream flux)
+		{
+			Board board = null;
+			
+			await Task.Run(() =>
 			{
-				await Task.Run(() =>
+				byte[] buffer = new byte[2048];
+				using (MemoryStream ms = new MemoryStream())
 				{
-					Console.WriteLine("En attente d'un message...");
-
-					byte[] buffer = new byte[2048];
-					using (MemoryStream ms = new MemoryStream())
+					int numBytesRead = flux.Read(buffer, 0, buffer.Length);
+					while (flux.DataAvailable || numBytesRead > 0)
 					{
-						int numBytesRead = flux.Read(buffer, 0, buffer.Length);
-						while (flux.DataAvailable || numBytesRead > 0)
-						{
-							if(numBytesRead == 0)
-								numBytesRead = flux.Read(buffer, 0, buffer.Length);
+						if(numBytesRead == 0)
+							numBytesRead = flux.Read(buffer, 0, buffer.Length);
 
-							Console.WriteLine($"Réception de {numBytesRead} bytes");
-
-							ms.Write(buffer, 0, numBytesRead);
-							numBytesRead = 0;
-						}
-
-						data = Serialise.MemoryStreamToObject<T>(ms); // converti les octets en un model demandé
-
-						Console.WriteLine($"Message de longueur {ms.ToArray().Length} reçu");
+						ms.Write(buffer, 0, numBytesRead);
+						numBytesRead = 0;
 					}
-				});
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine(@"Impossible de recevoir un message TCP : " + e.Message);
-			}
 
-			return data;
+					board = Serialise.MemoryStreamToObject(ms); // converti les octets en un model demandé
+				}
+			});
+
+			return board;
+		}
+		
+		/**
+		 * <summary>Envoie un model au client</summary>
+		 * <param name="board">Model qui implémente <see cref="Board"/> à envoyer</param>
+		 * <returns>true si tout s'est bien passé, false sinon</returns>
+		 */
+		public async Task SendAsync(Board board)
+		{
+			await SendAsync(board, _flux);
 		}
 
 		/**
 		 * <summary>Envoie un model au client</summary>
-		 * <param name="data">Model qui implémente <see cref="IModelReseau"/> à envoyer</param>
+		 * <param name="board">Model qui implémente <see cref="IModelReseau"/> à envoyer</param>
 		 * <param name="flux">Flux <see cref="NetworkStream"/> à envoyer</param>
 		 * <returns>true si tout s'est bien passé, false sinon</returns>
 		 */
-		protected virtual async Task<bool> SendAsync(DataToExchange data, NetworkStream flux)
+		protected async Task SendAsync(Board board, NetworkStream flux)
 		{
-			try
+			await Task.Run(() =>
 			{
-				await Task.Run(() =>
-				{
-					BinaryWriter binaryWriter = new BinaryWriter(flux); // converti le flux en binaire
+				BinaryWriter binaryWriter = new BinaryWriter(flux); // converti le flux en binaire
 
-					byte[] byteData = Serialise.ObjectToByteArray(data);
+				byte[] byteData = Serialise.ObjectToByteArray(board);
 
-					binaryWriter.Write(byteData); // envoie le model sous forme de bytes[]
-
-					Console.WriteLine($"Message de longueur {byteData.Length} envoyé");
-				});
-
-				return true;
-			}
-
-			catch (Exception e)
-			{
-				Console.WriteLine(@"Impossible d'envoyer un message TCP : " + e.Message);
-				return false;
-			}
+				binaryWriter.Write(byteData); // envoie le model sous forme de bytes[]
+			});
 		}
 	}
 }

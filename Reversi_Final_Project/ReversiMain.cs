@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Linq;
 using System.Windows.Forms;
-using System.Net;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 using Reversi_Final_Project.Réseau;
 
@@ -10,28 +7,18 @@ namespace Reversi_Final_Project
 {
     public partial class ReversiMain : Form
     {
-        #region Network
-
-        private ClientTcpController client;
-        private ServerTcpController serverTcp;
-
-        #endregion
+        private NetworkUtilities networkUtilities;
 
         private Board board;
-        private SquareControl[,] squareControls;
+        private readonly SquareControl[,] squareControls;
 
-        private string nomFic = "sauvegarde";
-        private string transferPanel = "Transfert Panel";
-        private string nomFicColor = "sauvColor";
-        private string transferColor = "Transfert Color";
+        private readonly string nomFic = "sauvegarde";
+        private readonly string nomFicColor = "sauvColor";
 
         // Game parameters.
-        private int currentColor;
-        private string Color ="";
+        private Coin currentColor;
 
-        private bool IsPlayerTurn;
-
-        private int OnlineFlag = 0; // 0 if Offline, 1 if Online
+        private OnlineFlag OnlineFlag = OnlineFlag.Offline;
 
         public ReversiMain()
         {
@@ -66,75 +53,55 @@ namespace Reversi_Final_Project
             }
         }
 
-        private void newGameToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void newGameToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            StartGame();
+            await StartGameAsync();
         }
 
-        private async void StartGame()
+        private async Task StartGameAsync()
         {
             // Initialize the board.
             board.SetForNewGame();
             UpdateBoardDisplay();
 
             // Set the first player.
-            currentColor = 1;
-            if(serverTcp != null)
-                await InitializeClientAsync();
+            currentColor = Coin.White;
+
+            await networkUtilities.InitializeServerAsync(board);
+            
             // Start the first turn.
             StartTurn();
-
-            
         }
+
         private async Task EnAttenteDeDonneesAsync()
         {
-            DataToExchange dataToExchange;
-            if (client != null)
-            {
-                dataToExchange = await client.ReceiveAsync<DataToExchange>();
-            }
-            else
-            {
-                dataToExchange = await serverTcp.ReceiveAsync<DataToExchange>();
-            }
-            
+            board = await networkUtilities.ReceiveAsync();
+            if(board == null) return;
+
             lbEchanges.Items.Insert(0, "Données recues");
-            IsPlayerTurn = true;
-            board = dataToExchange.Board;
             
             UpdateBoardDisplay();
             Focus();
             StartTurn();
         }
 
-        private async Task InitializeClientAsync()
-        {
-            DataToExchange dataToExchange = new DataToExchange
-            {
-                Command = Command.Initialization,
-                Board = board
-            };
-            
-            await serverTcp.SendAsync(dataToExchange);
-        }
-
         private void StartTurn()
         {
-            if (client != null)
+            if (networkUtilities.IsClient)
             {
-                currentColor = 1;
+                currentColor = Coin.White;
             }
             else
             {
-                currentColor = -1;
+                currentColor = Coin.Black;
             }
+            
             if (!board.HasAnyValidMove(currentColor))
             {
                 MessageBox.Show("No Valid move");
                 //currentColor *= -1;
                 if (!board.HasAnyValidMove(currentColor))
                 {
-
                     EndGame();
                     return;
                 }
@@ -173,32 +140,18 @@ namespace Reversi_Final_Project
         }
 
 
+        // Switch players and start the next turn.
         private async Task EndMoveAsync()
         {
-            // Switch players and start the next turn.
-
             SetColor();
-            DataToExchange dataToExchange = new DataToExchange
-            {
-                Board = board
-            };
-            if (client != null)
-            {
-                await client.SendAsync(dataToExchange);
 
-            }
-            else
-            {
-                await serverTcp.SendAsync(dataToExchange);
-
-            }
+            await networkUtilities.SendAsync(board);
 
             StopTurn();
             
             UpdateBoardDisplay();
             
             await EnAttenteDeDonneesAsync();
-
         }
 
         private void StopTurn()
@@ -206,20 +159,20 @@ namespace Reversi_Final_Project
             Board1.Enabled = false;
         }
 
-        public void SetColor()
+        private void SetColor()
         {
-            if (currentColor == -1)
-                Color = "Black";
+            if (currentColor == Coin.Black)
+            {
+                lbEchanges.Items.Insert(0, "Black has played.");
+                lbEchanges.Items.Insert(0,"It's White's turn.");
+            }
             else
-                Color = "White";
-            lbEchanges.Items.Insert(0, Color.ToString() + " has played.");
-            //currentColor *= -1;
-            if (currentColor == -1)
-                Color = "Black";
-            else
-                Color = "White";
-            lbEchanges.Items.Insert(0,"It's " + Color.ToString() + "'s turn.");
+            {
+                lbEchanges.Items.Insert(0, "White has played.");
+                lbEchanges.Items.Insert(0,"It's Black's turn.");
+            }
         }
+        
         //
         // Updates the display to reflect the current game board.
         //
@@ -234,14 +187,14 @@ namespace Reversi_Final_Project
                {
                    squareControl = (SquareControl)Board1.Controls[i * 8 + j];
                    squareControl.Contents = board.GetSquareContents(i, j);
-                   squareControl.PreviewContents = Board.Empty;
+                   squareControl.PreviewContents = (int) Coin.Empty;
                }
            }
 
            // Redraw the board.
            Board1.Refresh();
-            
         }
+        
         private async void SquareControl_Click(object sender, EventArgs e)
         {
             SquareControl squareControl = (SquareControl)sender;
@@ -256,6 +209,7 @@ namespace Reversi_Final_Project
                 await MakeMove(squareControl.Row, squareControl.Col);
             }
         }
+        
         private void SquareControl_MouseMove(object sender, MouseEventArgs e)
         {
             SquareControl squareControl = (SquareControl)sender;
@@ -268,47 +222,55 @@ namespace Reversi_Final_Project
                 squareControl.Cursor = Cursors.Hand;
             }
         }
+        
         private void SquareControl_MouseLeave(object sender, EventArgs e)
         {
             SquareControl squareControl = (SquareControl)sender;
 
             // If the move is being previewed, clear all affected Squares.
 
-            if (squareControl.PreviewContents != Board.Empty)
+            if (squareControl.PreviewContents != (int) Coin.Empty)
             {
                 // Clear the move preview.
                 for (int i = 0; i < 8; i++)
+                {
                     for (int j = 0; j < 8; j++)
-                        if (squareControls[i, j].PreviewContents != Board.Empty)
+                    {
+                        if (squareControls[i, j].PreviewContents != (int) Coin.Empty)
                         {
-                            squareControls[i, j].PreviewContents = Board.Empty;
+                            squareControls[i, j].PreviewContents = (int) Coin.Empty;
                             squareControls[i, j].Refresh();
                         }
+                    }
+                }
             }
 
             // Restore the cursor.
             squareControl.Cursor = Cursors.Default;
         }
-        private void HighlightValidMoves(int color)
+        
+        private void HighlightValidMoves(Coin color)
         {
             // Check each square.
             SquareControl squareControl;
             int i, j;
             for (i = 0; i < 8; i++)
+            {
                 for (j = 0; j < 8; j++)
                 {
                     squareControl = (SquareControl)Board1.Controls[i * 8 + j];
-                    if (board.IsValidMove(i, j, color))
-                        squareControl.IsValid = true;
-                    else
-                        squareControl.IsValid = false;
+                    
+                    squareControl.IsValid = board.IsValidMove(i, j, color);
                 }
+            }
         }
+        
         private void sauvegarderToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Serialise.Sauve(nomFic, board);
             Serialise.Sauve(nomFicColor, currentColor);
         }
+        
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Object obj = Serialise.Recup(nomFic);
@@ -320,43 +282,27 @@ namespace Reversi_Final_Project
             Object objColor = Serialise.Recup(nomFicColor);
             if(objColor != null)
             {
-                currentColor = (int)objColor;
+                currentColor = (Coin) objColor;
                 StartTurn();
             }
         }
-        
-        private static IPAddress GetLocalIpAddress()
-        {
-            var host = Dns.GetHostEntry(Dns.GetHostName());
 
-            return host.AddressList.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-        }
-        
         private async void mcSocket_Ecouter_Click(object sender, EventArgs e)
         {
-            IsPlayerTurn = true;
             mcSocket_Ecouter.Enabled = mcSocket_Connecter.Enabled = false;
             mcSocket_deconnecter.Enabled = true;
-
-            serverTcp = new ServerTcpController();
             
-            bool res = await serverTcp.ListenAsync(new IPEndPoint(GetLocalIpAddress(), 1010));
-            Console.WriteLine(res);
+            networkUtilities = new NetworkUtilities();
+            await networkUtilities.StartServerAsync();
         }
         
         private async void mcSocket_Connecter_Click(object sender, EventArgs e)
         {
-            
             mcSocket_Ecouter.Enabled = mcSocket_Connecter.Enabled = false;
             mcSocket_deconnecter.Enabled = true;
-            
-            // démarre le client tcp
-            client = new ClientTcpController();
-            await client.ConnectAsync(new IPEndPoint(GetLocalIpAddress(), 1010));
-            DataToExchange dataToExchange = await client.ReceiveAsync<DataToExchange>();
 
-            IsPlayerTurn = false;
-            board = dataToExchange.Board;
+            networkUtilities = new NetworkUtilities();
+            board = await networkUtilities.StartClientAsync();
             
             UpdateBoardDisplay();
             Focus();
