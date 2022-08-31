@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 namespace Reversi_Final_Project.Réseau
 {
+	//Gestion client
 	public class ClientTcpController : Tcp
 	{
 		private readonly TcpClient _client;
@@ -13,13 +14,10 @@ namespace Reversi_Final_Project.Réseau
 			_client = new TcpClient();
 		}
 
-		/**
-		 * <summary>Se connecte à un serveur</summary>
-		 * <param name="serveur">Informations du serveur auquel se connecter</param>
-		 */
+		//Fonction de connexion au serveur
 		public async Task ConnectAsync(IPEndPoint serveur)
 		{
-			await _client.ConnectAsync(serveur.Address, serveur.Port);
+			await _client.ConnectAsync(serveur.Address, serveur.Port); //adresseIP et le port en argument
 			_flux = _client.GetStream();
 		}
 

@@ -5,11 +5,7 @@ namespace Reversi_Final_Project.Réseau
 {
 	public static class Serialise
 	{
-		/**
-		 * <summary>Converti un objet en un tableau de byte</summary>
-		 * <param name="obj">Objet à sérialiser</param>
-		 * <returns>L'objet sérialisé</returns>
-		 */
+		//Transforme un objet en tableau de byte pour préparer a l'envoi
 		public static byte[] ObjectToByteArray(object obj)
 		{
 			BinaryFormatter bf = new BinaryFormatter();
@@ -19,7 +15,7 @@ namespace Reversi_Final_Project.Réseau
 				return ms.ToArray();
 			}
 		}
-
+		//Convertis les bits recus en board
 		public static Board MemoryStreamToObject(MemoryStream stream)
 		{
 			var binForm = new BinaryFormatter();

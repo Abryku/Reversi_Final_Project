@@ -18,7 +18,7 @@ namespace Reversi_Final_Project
         // Game parameters.
         private Coin currentColor;
 
-        private OnlineFlag OnlineFlag = OnlineFlag.Offline;
+        private OnlineFlag onlineFlag = OnlineFlag.Offline;
 
         public ReversiMain()
         {
@@ -55,7 +55,14 @@ namespace Reversi_Final_Project
 
         private async void newGameToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            await StartGameAsync();
+            if (onlineFlag == OnlineFlag.Online)
+            {            
+                await StartGameAsync();
+            }
+            else 
+            {
+                StartGame();
+            }
         }
 
         private async Task StartGameAsync()
@@ -73,6 +80,19 @@ namespace Reversi_Final_Project
             StartTurn();
         }
 
+        private void StartGame()
+        {
+            // Initialize the board.
+            board.SetForNewGame();
+            UpdateBoardDisplay();
+
+            // Set the first player.
+            currentColor = Coin.White;
+
+            // Start the first turn.
+            StartTurn();
+        }
+
         private async Task EnAttenteDeDonneesAsync()
         {
             board = await networkUtilities.ReceiveAsync();
@@ -82,18 +102,19 @@ namespace Reversi_Final_Project
             
             UpdateBoardDisplay();
             Focus();
-            StartTurn();
+            StartTurnOnline();
         }
 
-        private void StartTurn()
+        private void StartTurnOnline()
         {
+            
             if (networkUtilities.IsClient)
             {
-                currentColor = Coin.White;
+                currentColor = Coin.Black;
             }
             else
             {
-                currentColor = Coin.Black;
+                currentColor = Coin.White;
             }
             
             if (!board.HasAnyValidMove(currentColor))
@@ -112,6 +133,29 @@ namespace Reversi_Final_Project
             Board1.Enabled = true;
             Board1.Refresh();
         }
+
+        private void StartTurn()
+        {
+            if (!this.board.HasAnyValidMove(this.currentColor))
+            {
+                MessageBox.Show("No Valid move");
+                if (this.currentColor == Coin.Black)
+                    this.currentColor = Coin.White;
+                else
+                    this.currentColor = Coin.Black;
+                if (!this.board.HasAnyValidMove(this.currentColor))
+                {
+
+                    EndGame();
+                    return;
+                }
+            }
+            Focus();
+            this.HighlightValidMoves(this.currentColor);
+            this.Board1.Refresh();
+        }
+
+
 
         private void EndGame()
         {
@@ -135,8 +179,31 @@ namespace Reversi_Final_Project
 
             // Update the display to reflect the board changes.
             UpdateBoardDisplay();
+            if (onlineFlag == OnlineFlag.Online)
+                await EndMoveAsync();
+            else
+                EndMove();
 
-            await EndMoveAsync();
+        }
+        private void EndMove()
+        {
+            if (currentColor == Coin.Black)
+            {
+                lbEchanges.Items.Insert(0, "Black has played.");
+                lbEchanges.Items.Insert(0, "It's White's turn.");
+
+            }
+            else
+            {
+                lbEchanges.Items.Insert(0, "White has played.");
+                lbEchanges.Items.Insert(0, "It's Black's turn.");
+            }
+            if (this.currentColor == Coin.Black)
+                this.currentColor = Coin.White;
+            else
+                this.currentColor = Coin.Black;
+
+            StartTurn();
         }
 
 
@@ -289,6 +356,7 @@ namespace Reversi_Final_Project
 
         private async void mcSocket_Ecouter_Click(object sender, EventArgs e)
         {
+            onlineFlag = OnlineFlag.Online;
             mcSocket_Ecouter.Enabled = mcSocket_Connecter.Enabled = false;
             mcSocket_deconnecter.Enabled = true;
             
@@ -298,6 +366,8 @@ namespace Reversi_Final_Project
         
         private async void mcSocket_Connecter_Click(object sender, EventArgs e)
         {
+            onlineFlag = OnlineFlag.Online;
+            gameToolStripMenuItem.Enabled = false;
             mcSocket_Ecouter.Enabled = mcSocket_Connecter.Enabled = false;
             mcSocket_deconnecter.Enabled = true;
 

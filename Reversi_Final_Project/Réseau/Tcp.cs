@@ -5,23 +5,16 @@ using System.Threading.Tasks;
 
 namespace Reversi_Final_Project.Réseau
 {
+	//Gestion de la communication
 	public class Tcp
 	{
 		protected NetworkStream _flux;
 		
-		/**
-		 * <summary>Lance l'écoute sur le serveur</summary>
-		 * <returns>Les données wrappées dans le model T demandé, null si une erreur</returns>
-		 */
+		//En attente de reception des données 
 		public async Task<Board> ReceiveAsync()
 		{
 			return await ReceiveAsync(_flux);
 		}
-		
-		/**
-		 * <summary>Lance l'écoute sur le serveur</summary>
-		 * <returns>Les données wrappées dans le model T demandé, null si une erreur</returns>
-		 */
 		private async Task<Board> ReceiveAsync(NetworkStream flux)
 		{
 			Board board = null;
@@ -48,22 +41,12 @@ namespace Reversi_Final_Project.Réseau
 			return board;
 		}
 		
-		/**
-		 * <summary>Envoie un model au client</summary>
-		 * <param name="board">Model qui implémente <see cref="Board"/> à envoyer</param>
-		 * <returns>true si tout s'est bien passé, false sinon</returns>
-		 */
+		//Envoi du board
 		public async Task SendAsync(Board board)
 		{
 			await SendAsync(board, _flux);
 		}
 
-		/**
-		 * <summary>Envoie un model au client</summary>
-		 * <param name="board">Model qui implémente <see cref="IModelReseau"/> à envoyer</param>
-		 * <param name="flux">Flux <see cref="NetworkStream"/> à envoyer</param>
-		 * <returns>true si tout s'est bien passé, false sinon</returns>
-		 */
 		protected async Task SendAsync(Board board, NetworkStream flux)
 		{
 			await Task.Run(() =>
